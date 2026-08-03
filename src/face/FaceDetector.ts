@@ -1,82 +1,74 @@
-import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision'
-import type { FaceObservation, Landmark } from '../types'
+import type { FaceObservation } from '../types'
 
-/** 左右の目(虹彩中心)のランドマーク番号。Face Landmarker は 478点(468-477が虹彩)。 */
-export const IDX_LEFT_IRIS = 468 // 画像上の左(観察者の右目)
-export const IDX_RIGHT_IRIS = 473
-const IDX_LEFT_EYE_OUTER = 33
-const IDX_LEFT_EYE_INNER = 133
-const IDX_RIGHT_EYE_INNER = 362
-const IDX_RIGHT_EYE_OUTER = 263
+export { IDX_LEFT_IRIS, IDX_RIGHT_IRIS, eyeCenter } from './faceCommon'
+
+/** 検出に使う入力画像の幅 [px]。縮小して推論を軽くする(§9.3 入力解像度調整)。 */
+const DETECT_WIDTH = 320
 
 /**
  * FaceDetector (spec.md §10.2)
- * MediaPipe Face Landmarker による複数顔ランドマーク検出(最大3顔、§15)。
+ * MediaPipe Face Landmarker をWeb Workerで実行するクライアント。
+ * 推論(数十ms)をメインスレッドから切り離し、描画をブロックしない。
  */
 export class FaceDetector {
-  private landmarker: FaceLandmarker | null = null
-  private lastVideoTime = -1
-  private lastResult: FaceObservation[] = []
+  private worker: Worker | null = null
+  private busy = false
+  ready = false
   /** 直近の推論時間 [ms] */
   inferenceMs = 0
+  /** 検出結果の通知先。w,h は検出に使った画像サイズ */
+  onResult: (faces: FaceObservation[], w: number, h: number, tMs: number) => void = () => {}
 
   async init(): Promise<void> {
-    const base = import.meta.env.BASE_URL
-    const fileset = await FilesetResolver.forVisionTasks(`${base}mediapipe/wasm`)
-    this.landmarker = await FaceLandmarker.createFromOptions(fileset, {
-      baseOptions: {
-        modelAssetPath: `${base}models/face_landmarker.task`,
-        delegate: 'GPU',
-      },
-      runningMode: 'VIDEO',
-      numFaces: 3,
-      outputFaceBlendshapes: false,
-      outputFacialTransformationMatrixes: false,
-    })
-  }
+    if (this.worker) return
+    // classicワーカー(MediaPipeのWASMローダーが importScripts を使うため type:'module' にしない)
+    const worker = new Worker(new URL('./faceWorker.ts', import.meta.url))
+    this.worker = worker
+    const baseUrl = new URL(import.meta.env.BASE_URL, location.href).href
 
-  get ready(): boolean {
-    return this.landmarker !== null
+    await new Promise<void>((resolve, reject) => {
+      worker.onmessage = (e) => {
+        const msg = e.data
+        if (msg.type === 'ready') resolve()
+        else if (msg.type === 'error') reject(new Error(msg.message))
+      }
+      worker.onerror = (e) => reject(new Error(e.message))
+      worker.postMessage({ type: 'init', baseUrl })
+    })
+
+    worker.onmessage = (e) => {
+      const msg = e.data
+      if (msg.type !== 'result') return
+      this.busy = false
+      this.inferenceMs = msg.inferMs
+      if (msg.w > 0) this.onResult(msg.faces, msg.w, msg.h, msg.t)
+    }
+    this.ready = true
   }
 
   /**
-   * ビデオの現在フレームから顔を検出する。
-   * 同一フレームに対しては前回結果を返す。
+   * ビデオの現在フレームの検出をワーカーへ依頼する(非同期、結果は onResult)。
+   * 前回の推論が終わっていないフレームは間引く。
    */
-  detect(video: HTMLVideoElement, timestampMs: number): FaceObservation[] {
-    if (!this.landmarker || video.readyState < 2 || video.videoWidth === 0) return []
-    if (video.currentTime === this.lastVideoTime) return this.lastResult
-    this.lastVideoTime = video.currentTime
-
-    const t0 = performance.now()
-    const result = this.landmarker.detectForVideo(video, timestampMs)
-    this.inferenceMs = performance.now() - t0
-
-    this.lastResult = result.faceLandmarks.map((lm) => toObservation(lm as Landmark[]))
-    return this.lastResult
+  requestDetect(video: HTMLVideoElement, tMs: number): void {
+    if (!this.ready || !this.worker || this.busy) return
+    if (video.readyState < 2 || video.videoWidth === 0) return
+    this.busy = true
+    const h = Math.round((DETECT_WIDTH * video.videoHeight) / video.videoWidth)
+    createImageBitmap(video, { resizeWidth: DETECT_WIDTH, resizeHeight: h })
+      .catch(() => createImageBitmap(video)) // resizeオプション非対応ブラウザ向け
+      .then((bitmap) => {
+        this.worker?.postMessage({ type: 'detect', bitmap, t: tMs }, [bitmap])
+      })
+      .catch(() => {
+        this.busy = false
+      })
   }
 
   close(): void {
-    this.landmarker?.close()
-    this.landmarker = null
+    this.worker?.terminate()
+    this.worker = null
+    this.ready = false
+    this.busy = false
   }
-}
-
-function toObservation(landmarks: Landmark[]): FaceObservation {
-  const l = eyeCenter(landmarks, IDX_LEFT_IRIS, IDX_LEFT_EYE_OUTER, IDX_LEFT_EYE_INNER)
-  const r = eyeCenter(landmarks, IDX_RIGHT_IRIS, IDX_RIGHT_EYE_INNER, IDX_RIGHT_EYE_OUTER)
-  return {
-    landmarks,
-    cx: (l.x + r.x) / 2,
-    cy: (l.y + r.y) / 2,
-    eyeDist: Math.hypot(l.x - r.x, l.y - r.y, l.z - r.z),
-  }
-}
-
-/** 虹彩ランドマークがあれば虹彩中心、なければ目頭・目尻の中点。 */
-export function eyeCenter(landmarks: Landmark[], iris: number, a: number, b: number): Landmark {
-  if (landmarks.length > iris) return landmarks[iris]
-  const p = landmarks[a]
-  const q = landmarks[b]
-  return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2, z: (p.z + q.z) / 2 }
 }

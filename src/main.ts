@@ -112,7 +112,20 @@ async function startCamera(): Promise<void> {
 }
 camera.onStateChange = (active) => ui.setCameraActive(active)
 
-// ---- 顔検出ループ(描画とは独立に回す) ----
+// ---- 顔検出ループ(推論はWeb Worker、結果は非同期に受け取る) ----
+detector.onResult = (faces, w, h, tMs) => {
+  lastFaces = faces
+  detectFrames++
+  const target = tracker.update(faces, tMs)
+  if (mouseMode) return
+  if (target) {
+    const eye = estimator.estimate(target, w, h, view)
+    filter.update(eye, tMs)
+  } else {
+    filter.update(null, tMs)
+  }
+}
+
 let detectionRunning = false
 function startDetectionLoop(): void {
   if (detectionRunning) return
@@ -126,19 +139,7 @@ function startDetectionLoop(): void {
       setTimeout(schedule, 200)
       return
     }
-    const now = performance.now()
-    const faces = detector.detect(video, now)
-    if (faces !== lastFaces) {
-      lastFaces = faces
-      detectFrames++
-      const target = tracker.update(faces, now)
-      if (target && !mouseMode) {
-        const eye = estimator.estimate(target, video.videoWidth, video.videoHeight, view)
-        filter.update(eye, now)
-      } else if (!mouseMode) {
-        filter.update(null, now)
-      }
-    }
+    detector.requestDetect(video, performance.now())
     schedule()
   }
   const schedule = () => {
