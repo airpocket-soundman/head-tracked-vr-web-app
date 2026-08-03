@@ -1,8 +1,9 @@
-// Simple runtime cache-first service worker.
-// Camera / face processing is fully on-device; this only caches static assets.
-const CACHE = 'headvr-v1';
+// Service worker: HTML はネットワーク優先(更新を確実に配信)、
+// ハッシュ付きアセットやモデルはキャッシュ優先。
+// カメラ映像・顔情報は端末内処理のみで、ここでは静的アセットしか扱わない。
+const CACHE = 'headvr-v2';
 
-self.addEventListener('install', (e) => {
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
@@ -18,13 +19,29 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
-  e.respondWith(
-    caches.open(CACHE).then(async (cache) => {
-      const hit = await cache.match(e.request);
-      if (hit) return hit;
-      const res = await fetch(e.request);
-      if (res.ok) cache.put(e.request, res.clone());
-      return res;
-    })
-  );
+
+  const isDocument = e.request.mode === 'navigate' || e.request.destination === 'document';
+  e.respondWith(isDocument ? networkFirst(e.request) : cacheFirst(e.request));
 });
+
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE);
+  try {
+    const res = await fetch(request);
+    if (res.ok) cache.put(request, res.clone());
+    return res;
+  } catch {
+    const hit = await cache.match(request);
+    if (hit) return hit;
+    throw new Error('offline and not cached');
+  }
+}
+
+async function cacheFirst(request) {
+  const cache = await caches.open(CACHE);
+  const hit = await cache.match(request);
+  if (hit) return hit;
+  const res = await fetch(request);
+  if (res.ok) cache.put(request, res.clone());
+  return res;
+}
