@@ -204,6 +204,7 @@ export class AppUI {
     numField('瞳孔間距離 [mm]', 'ipdMm', 40, 80)
     numField('カメラの画面上端からの距離 [mm]', 'camAboveMm', -50, 300)
     numField('視差の強さ', 'parallaxScale', 0.1, 3, 0.1)
+    numField('遠近の強さ', 'perspStrength', 0.1, 2, 0.05)
     numField('距離補正倍率', 'distScale', 0.2, 5, 0.05)
 
     // 既知距離での校正(spec.md §6.3): 顔を画面から40cmに保って実行する

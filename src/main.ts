@@ -180,7 +180,9 @@ function frame(): void {
 
   if (mouseMode) filter.update(mouseEye, now)
   const eye = filter.getEye(now)
-  offAxis.update(eye, view.wM, view.hM)
+  // 遠近の強さ: 1未満なら仮想視点を遠ざけて遠近感を弱める
+  const p = Math.max(calib.settings.perspStrength, 0.05)
+  offAxis.update({ x: eye.x, y: eye.y, z: eye.z / p }, view.wM, view.hM)
   sceneRenderer.render(offAxis.camera, dt)
   renderFrames++
 

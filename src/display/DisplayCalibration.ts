@@ -18,6 +18,11 @@ export interface CalibSettings {
   parallaxScale: number
   /** アバターのアニメーション再生(false=静止) */
   avatarMotion: boolean
+  /**
+   * 遠近の強さ(1=物理的に正しい遠近)。
+   * 1未満で仮想視点を実際より遠くに置き、遠近感と視差を同時に弱める。
+   */
+  perspStrength: number
 }
 
 const STORAGE_KEY = 'headvr-calib-v1'
@@ -51,6 +56,7 @@ export class DisplayCalibration {
       distScale: 1,
       parallaxScale: 1,
       avatarMotion: false,
+      perspStrength: 1,
     }
     this.load()
   }
