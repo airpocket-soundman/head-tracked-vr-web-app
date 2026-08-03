@@ -6,6 +6,9 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 //   HTTPS_DEV=1 npm run dev   (PowerShell: $env:HTTPS_DEV='1'; npm run dev)
 export default defineConfig({
   base: '/head-tracked-vr-web-app/',
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')),
+  },
   plugins: process.env.HTTPS_DEV ? [basicSsl()] : [],
   server: {
     host: true, // allow access from phones on the same LAN

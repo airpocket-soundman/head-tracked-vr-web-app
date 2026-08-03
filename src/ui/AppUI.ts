@@ -206,6 +206,7 @@ export class AppUI {
     numField('視差の強さ', 'parallaxScale', 0.1, 3, 0.1)
     numField('遠近の強さ', 'perspStrength', 0.1, 2, 0.05)
     numField('距離補正倍率', 'distScale', 0.2, 5, 0.05)
+    numField('描画解像度スケール', 'renderScale', 0.25, 1, 0.05)
 
     // 既知距離での校正(spec.md §6.3): 顔を画面から40cmに保って実行する
     const calBtn = el('button', 'btn secondary')

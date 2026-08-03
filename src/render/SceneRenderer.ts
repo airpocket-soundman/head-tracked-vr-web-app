@@ -169,8 +169,8 @@ export class SceneRenderer {
     })
   }
 
-  setSize(wPx: number, hPx: number): void {
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  setSize(wPx: number, hPx: number, renderScale = 1): void {
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * renderScale)
     this.renderer.setSize(wPx, hPx, false)
   }
 

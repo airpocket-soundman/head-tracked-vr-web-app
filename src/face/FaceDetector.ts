@@ -16,6 +16,8 @@ export class FaceDetector {
   ready = false
   /** 直近の推論時間 [ms] */
   inferenceMs = 0
+  /** 推論の実行環境(GPU/CPU)。ready後に確定 */
+  delegate = '-'
   /** 検出結果の通知先。w,h は検出に使った画像サイズ */
   onResult: (faces: FaceObservation[], w: number, h: number, tMs: number) => void = () => {}
 
@@ -29,8 +31,10 @@ export class FaceDetector {
     await new Promise<void>((resolve, reject) => {
       worker.onmessage = (e) => {
         const msg = e.data
-        if (msg.type === 'ready') resolve()
-        else if (msg.type === 'error') reject(new Error(msg.message))
+        if (msg.type === 'ready') {
+          this.delegate = msg.delegate
+          resolve()
+        } else if (msg.type === 'error') reject(new Error(msg.message))
       }
       worker.onerror = (e) => reject(new Error(e.message))
       worker.postMessage({ type: 'init', baseUrl })

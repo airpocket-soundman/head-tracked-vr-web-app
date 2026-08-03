@@ -74,7 +74,7 @@ function layout(): void {
   stage.style.top = `${view.top}px`
   stage.style.width = `${view.wPx}px`
   stage.style.height = `${view.hPx}px`
-  sceneRenderer.setSize(view.wPx, view.hPx)
+  sceneRenderer.setSize(view.wPx, view.hPx, calib.settings.renderScale)
   sceneRenderer.setRoomSize(view.wM, view.hM)
 }
 window.addEventListener('resize', layout)
@@ -208,9 +208,10 @@ function updateStatus(eye: EyePose): void {
     `E   : (${(eye.x * 1000).toFixed(0)}, ${(eye.y * 1000).toFixed(0)}, ${(eye.z * 1000).toFixed(0)}) mm`,
     `view: ${(view.wM * 1000).toFixed(0)} x ${(view.hM * 1000).toFixed(0)} mm`,
     `faces: ${lastFaces.length}  target: ${tracker.targetIndex}`,
-    `det : ${detectFps} fps  infer ${detector.inferenceMs.toFixed(1)} ms`,
-    `draw: ${renderFps} fps`,
+    `det : ${detectFps} fps  infer ${detector.inferenceMs.toFixed(1)} ms (${detector.delegate})`,
+    `draw: ${renderFps} fps  dpr ${(Math.min(window.devicePixelRatio, 2) * calib.settings.renderScale).toFixed(2)}`,
     `state: ${filter.state}${mouseMode ? ' (mouse)' : ''}`,
+    `build: ${__BUILD_TIME__}`,
   ])
 }
 

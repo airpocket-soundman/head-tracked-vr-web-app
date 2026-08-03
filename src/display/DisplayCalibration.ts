@@ -25,6 +25,8 @@ export interface CalibSettings {
   perspStrength: number
   /** ワイヤーフレーム表示(描画負荷の切り分け用) */
   wireframe: boolean
+  /** 描画解像度スケール(1=devicePixelRatio準拠。下げるとGPU負荷減) */
+  renderScale: number
 }
 
 const STORAGE_KEY = 'headvr-calib-v1'
@@ -60,6 +62,7 @@ export class DisplayCalibration {
       avatarMotion: false,
       perspStrength: 1,
       wireframe: false,
+      renderScale: 1,
     }
     this.load()
   }
