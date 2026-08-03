@@ -13,6 +13,9 @@ import { IDX_LEFT_IRIS, IDX_RIGHT_IRIS, eyeCenter } from '../face/FaceDetector'
  * 見かけ縮小をある程度補正する(§8.2)。
  */
 export class EyePoseEstimator {
+  /** 補正前の生の距離推定値 [m](既知距離校正に使用) */
+  lastRawZ = 0
+
   constructor(private calib: DisplayCalibration) {}
 
   estimate(face: FaceObservation, videoW: number, videoH: number, view: ViewSize): EyePose {
@@ -28,8 +31,9 @@ export class EyePoseEstimator {
     const ipdPx = dist3(l, r, videoW, videoH)
     if (ipdPx < 1e-6) return { x: 0, y: 0, z: 0.4 }
 
-    // 距離 [m]
-    const z = (fPx * (s.ipdMm / 1000)) / ipdPx
+    // 距離 [m](既知距離校正による補正倍率 distScale を適用、§6.3)
+    this.lastRawZ = (fPx * (s.ipdMm / 1000)) / ipdPx
+    const z = this.lastRawZ * s.distScale
 
     // 両目中点の画像座標 [px]
     const u = ((l.x + r.x) / 2) * videoW
@@ -44,9 +48,11 @@ export class EyePoseEstimator {
     // 画像Yは下向き正、ディスプレイYは上向き正のためYも反転。
     if (s.mirrorX) xc = -xc
     const cam = this.calib.cameraPosition(view)
+    // 視差の強さ: 表示領域中心を基準に横方向オフセットをスケールする
+    const p = s.parallaxScale
     return {
-      x: cam.x + xc,
-      y: cam.y - yc,
+      x: (cam.x + xc) * p,
+      y: (cam.y - yc) * p,
       z: cam.z + z,
     }
   }

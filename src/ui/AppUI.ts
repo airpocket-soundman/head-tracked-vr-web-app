@@ -6,6 +6,8 @@ export interface UICallbacks {
   onMouseMode: () => void
   onReset: () => void
   onSettingsChanged: () => void
+  /** 既知距離(40cm)での距離校正を実行し、結果メッセージを返す */
+  onCalibrateDistance: () => string
 }
 
 const STATE_LABEL: Record<TrackingState, string> = {
@@ -169,13 +171,21 @@ export class AppUI {
     h2.textContent = '校正・設定'
     this.settingsPanel.appendChild(h2)
 
-    const numField = (label: string, key: keyof CalibSettings, min: number, max: number) => {
+    const inputs = new Map<keyof CalibSettings, HTMLInputElement>()
+    const numField = (
+      label: string,
+      key: keyof CalibSettings,
+      min: number,
+      max: number,
+      step = 1
+    ) => {
       const lab = document.createElement('label')
       lab.textContent = label
       const input = document.createElement('input')
       input.type = 'number'
       input.min = String(min)
       input.max = String(max)
+      input.step = String(step)
       input.value = String(this.settings[key])
       input.onchange = () => {
         const v = Number(input.value)
@@ -185,6 +195,7 @@ export class AppUI {
         }
       }
       lab.appendChild(input)
+      inputs.set(key, input)
       this.settingsPanel.appendChild(lab)
     }
 
@@ -192,6 +203,20 @@ export class AppUI {
     numField('カメラ水平画角 [°]', 'hfovDeg', 30, 120)
     numField('瞳孔間距離 [mm]', 'ipdMm', 40, 80)
     numField('カメラの画面上端からの距離 [mm]', 'camAboveMm', -50, 300)
+    numField('視差の強さ', 'parallaxScale', 0.1, 3, 0.1)
+    numField('距離補正倍率', 'distScale', 0.2, 5, 0.05)
+
+    // 既知距離での校正(spec.md §6.3): 顔を画面から40cmに保って実行する
+    const calBtn = el('button', 'btn secondary')
+    calBtn.textContent = '距離を校正(顔を画面から40cmにして押す)'
+    const calMsg = el('div')
+    calMsg.style.cssText = 'color:#9fd;font-size:11px;margin:6px 0;min-height:14px'
+    calBtn.onclick = () => {
+      calMsg.textContent = this.cb.onCalibrateDistance()
+      const di = inputs.get('distScale')
+      if (di) di.value = String(this.settings.distScale.toFixed(2))
+    }
+    this.settingsPanel.append(calBtn, calMsg)
 
     const mirrorLab = document.createElement('label')
     mirrorLab.textContent = '左右反転(ミラー)補正'

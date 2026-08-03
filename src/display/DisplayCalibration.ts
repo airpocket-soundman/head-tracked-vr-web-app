@@ -12,6 +12,10 @@ export interface CalibSettings {
   camAboveMm: number
   /** カメラ映像X反転(ミラー)を計算に適用するか */
   mirrorX: boolean
+  /** 距離推定の補正倍率(既知距離での校正で決定、spec.md §6.3) */
+  distScale: number
+  /** 視差の強さ(1=物理的に正しいスケール) */
+  parallaxScale: number
 }
 
 const STORAGE_KEY = 'headvr-calib-v1'
@@ -40,6 +44,8 @@ export class DisplayCalibration {
       ipdMm: 63,
       camAboveMm: 5,
       mirrorX: true,
+      distScale: 1,
+      parallaxScale: 1,
     }
     this.load()
   }

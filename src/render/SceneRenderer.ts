@@ -22,10 +22,10 @@ export class SceneRenderer {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
     this.scene = new THREE.Scene()
-    this.scene.background = new THREE.Color(0x06070c)
+    this.scene.background = new THREE.Color(0x020308)
 
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.7))
-    const key = new THREE.PointLight(0xffffff, 1.0, 0, 2)
+    this.scene.add(new THREE.AmbientLight(0xccddff, 0.35))
+    const key = new THREE.PointLight(0xffffff, 0.7, 0, 2)
     key.position.set(0, 0.02, -0.01) // 開口部付近から部屋を照らす
     this.scene.add(key)
 
@@ -68,29 +68,33 @@ export class SceneRenderer {
       )
     }
 
-    const floor = wall(w, d, 0x8899aa)
+    const floor = wall(w, d, 0xbbc4d4)
     floor.rotation.x = -Math.PI / 2
     floor.position.set(0, -h / 2, -d / 2)
 
-    const ceiling = wall(w, d, 0x667788)
+    const ceiling = wall(w, d, 0x8891a0)
     ceiling.rotation.x = Math.PI / 2
     ceiling.position.set(0, h / 2, -d / 2)
 
-    const leftWall = wall(d, h, 0x7788aa)
+    const leftWall = wall(d, h, 0xa8b2c8)
     leftWall.rotation.y = Math.PI / 2
     leftWall.position.set(-w / 2, 0, -d / 2)
 
-    const rightWall = wall(d, h, 0x7788aa)
+    const rightWall = wall(d, h, 0xa8b2c8)
     rightWall.rotation.y = -Math.PI / 2
     rightWall.position.set(w / 2, 0, -d / 2)
 
-    const backWall = wall(w, h, 0x99aabb)
+    const backWall = wall(w, h, 0xcdd5e2)
     backWall.position.set(0, 0, -d)
 
     room.add(floor, ceiling, leftWall, rightWall, backWall)
 
     // 開口部近くの浮遊キューブ(運動視差の手掛かり、scene_spec.md §2)
-    const cubeMat = new THREE.MeshStandardMaterial({ color: 0x50c8ff, roughness: 0.4 })
+    const cubeMat = new THREE.MeshStandardMaterial({
+      color: 0x2f7ca8,
+      emissive: 0x0c2231,
+      roughness: 0.4,
+    })
     const cubeSize = w * 0.06
     const positions: [number, number, number][] = [
       [-w * 0.32, h * 0.3, -d * 0.15],
@@ -149,9 +153,9 @@ function makeGridTexture(): THREE.Texture {
   const cv = document.createElement('canvas')
   cv.width = cv.height = size
   const ctx = cv.getContext('2d')!
-  ctx.fillStyle = '#ffffff'
+  ctx.fillStyle = '#151a24'
   ctx.fillRect(0, 0, size, size)
-  ctx.strokeStyle = '#b8c0cc'
+  ctx.strokeStyle = '#333c4d'
   ctx.lineWidth = 3
   ctx.strokeRect(0, 0, size, size)
   const tex = new THREE.CanvasTexture(cv)

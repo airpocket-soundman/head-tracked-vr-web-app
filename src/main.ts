@@ -53,6 +53,16 @@ const ui = new AppUI(calib.settings, {
     calib.save()
     layout()
   },
+  onCalibrateDistance: () => {
+    // 既知距離40cmでの距離校正(spec.md §6.3)
+    if (!camera.active || filter.state !== 'tracking' || estimator.lastRawZ <= 0) {
+      return '顔を追跡できていません。カメラ起動後、顔が検出された状態で実行してください。'
+    }
+    const scale = Math.min(5, Math.max(0.2, 0.4 / estimator.lastRawZ))
+    calib.settings.distScale = scale
+    calib.save()
+    return `距離補正倍率 ${scale.toFixed(2)} を保存しました(推定 ${(estimator.lastRawZ * 100).toFixed(0)}cm → 40cm)`
+  },
 })
 
 // ---- レイアウト(scene_spec.md §3) ----
