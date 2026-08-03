@@ -63,8 +63,16 @@ export class DisplayCalibration {
 
   /** 画面の mm/CSSピクセル。 */
   private pxPitchMm(): number {
-    const sw = Math.min(screen.width, screen.height)
-    const base = this.isMobile ? sw : Math.max(screen.width, screen.height)
+    let base = this.isMobile
+      ? Math.min(screen.width, screen.height)
+      : Math.max(screen.width, screen.height)
+    // 環境によっては screen サイズが 0 を返すことがあるためフォールバック
+    if (!(base > 0)) {
+      base = this.isMobile
+        ? Math.min(window.innerWidth, window.innerHeight)
+        : Math.max(window.innerWidth, window.innerHeight)
+    }
+    if (!(base > 0)) base = 400
     return this.settings.screenWidthMm / base
   }
 
