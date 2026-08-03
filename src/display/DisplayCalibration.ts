@@ -16,6 +16,8 @@ export interface CalibSettings {
   distScale: number
   /** 視差の強さ(1=物理的に正しいスケール) */
   parallaxScale: number
+  /** アバターのアニメーション再生(false=静止) */
+  avatarMotion: boolean
 }
 
 const STORAGE_KEY = 'headvr-calib-v1'
@@ -48,6 +50,7 @@ export class DisplayCalibration {
       mirrorX: true,
       distScale: 1,
       parallaxScale: 1,
+      avatarMotion: false,
     }
     this.load()
   }

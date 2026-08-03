@@ -218,6 +218,18 @@ export class AppUI {
     }
     this.settingsPanel.append(calBtn, calMsg)
 
+    const motionLab = document.createElement('label')
+    motionLab.textContent = 'アバターのアニメーション'
+    const motion = document.createElement('input')
+    motion.type = 'checkbox'
+    motion.checked = this.settings.avatarMotion
+    motion.onchange = () => {
+      this.settings.avatarMotion = motion.checked
+      this.cb.onSettingsChanged()
+    }
+    motionLab.appendChild(motion)
+    this.settingsPanel.appendChild(motionLab)
+
     const mirrorLab = document.createElement('label')
     mirrorLab.textContent = '左右反転(ミラー)補正'
     const mirror = document.createElement('input')

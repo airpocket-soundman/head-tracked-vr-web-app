@@ -14,6 +14,8 @@ export class SceneRenderer {
   private avatar: THREE.Group | null = null
   private avatarBaseHeight = 1
   private mixer: THREE.AnimationMixer | null = null
+  private idleAction: THREE.AnimationAction | null = null
+  private animationEnabled = false
   private gridTexture: THREE.Texture
   private wM = 0.07
   private hM = 0.14
@@ -121,7 +123,13 @@ export class SceneRenderer {
     this.mixer = new THREE.AnimationMixer(this.avatar)
     const idle =
       gltf.animations.find((c) => c.name.toLowerCase().includes('idle')) ?? gltf.animations[0]
-    if (idle) this.mixer.clipAction(idle).play()
+    if (idle) {
+      this.idleAction = this.mixer.clipAction(idle)
+      this.idleAction.play()
+      // 静止時も自然な姿勢にするため、Idleの先頭フレームのポーズを適用して止める
+      this.mixer.update(0)
+      this.idleAction.paused = !this.animationEnabled
+    }
 
     this.scene.add(this.avatar)
     this.fitAvatar()
@@ -134,6 +142,11 @@ export class SceneRenderer {
     const s = targetH / this.avatarBaseHeight
     this.avatar.scale.setScalar(s)
     this.avatar.position.set(0, -this.hM / 2, -this.wM * 0.55)
+  }
+
+  setAnimationEnabled(enabled: boolean): void {
+    this.animationEnabled = enabled
+    if (this.idleAction) this.idleAction.paused = !enabled
   }
 
   setSize(wPx: number, hPx: number): void {
