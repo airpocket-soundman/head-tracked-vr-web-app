@@ -23,6 +23,8 @@ export interface CalibSettings {
    * 1未満で仮想視点を実際より遠くに置き、遠近感と視差を同時に弱める。
    */
   perspStrength: number
+  /** ワイヤーフレーム表示(描画負荷の切り分け用) */
+  wireframe: boolean
 }
 
 const STORAGE_KEY = 'headvr-calib-v1'
@@ -57,6 +59,7 @@ export class DisplayCalibration {
       parallaxScale: 1,
       avatarMotion: false,
       perspStrength: 1,
+      wireframe: false,
     }
     this.load()
   }

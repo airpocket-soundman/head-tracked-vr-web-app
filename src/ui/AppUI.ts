@@ -231,6 +231,18 @@ export class AppUI {
     motionLab.appendChild(motion)
     this.settingsPanel.appendChild(motionLab)
 
+    const wireLab = document.createElement('label')
+    wireLab.textContent = 'ワイヤーフレーム表示'
+    const wire = document.createElement('input')
+    wire.type = 'checkbox'
+    wire.checked = this.settings.wireframe
+    wire.onchange = () => {
+      this.settings.wireframe = wire.checked
+      this.cb.onSettingsChanged()
+    }
+    wireLab.appendChild(wire)
+    this.settingsPanel.appendChild(wireLab)
+
     const mirrorLab = document.createElement('label')
     mirrorLab.textContent = '左右反転(ミラー)補正'
     const mirror = document.createElement('input')

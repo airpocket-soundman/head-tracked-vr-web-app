@@ -16,6 +16,7 @@ export class SceneRenderer {
   private mixer: THREE.AnimationMixer | null = null
   private idleAction: THREE.AnimationAction | null = null
   private animationEnabled = false
+  private wireframe = false
   private gridTexture: THREE.Texture
   private wM = 0.07
   private hM = 0.14
@@ -112,6 +113,7 @@ export class SceneRenderer {
 
     this.room = room
     this.scene.add(room)
+    this.applyWireframe()
   }
 
   async loadAvatar(url: string): Promise<void> {
@@ -133,6 +135,7 @@ export class SceneRenderer {
 
     this.scene.add(this.avatar)
     this.fitAvatar()
+    this.applyWireframe()
   }
 
   /** アバターを部屋の高さの70%に正規化し、部屋の中央奥寄りへ配置する(scene_spec.md §2)。 */
@@ -147,6 +150,23 @@ export class SceneRenderer {
   setAnimationEnabled(enabled: boolean): void {
     this.animationEnabled = enabled
     if (this.idleAction) this.idleAction.paused = !enabled
+  }
+
+  /** ワイヤーフレーム表示(描画負荷の切り分け用)。 */
+  setWireframe(enabled: boolean): void {
+    this.wireframe = enabled
+    this.applyWireframe()
+  }
+
+  private applyWireframe(): void {
+    this.scene.traverse((o) => {
+      if (o instanceof THREE.Mesh) {
+        const mats = Array.isArray(o.material) ? o.material : [o.material]
+        for (const m of mats) {
+          if ('wireframe' in m) (m as THREE.MeshStandardMaterial).wireframe = this.wireframe
+        }
+      }
+    })
   }
 
   setSize(wPx: number, hPx: number): void {

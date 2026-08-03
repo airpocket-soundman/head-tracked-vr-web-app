@@ -53,6 +53,7 @@ const ui = new AppUI(calib.settings, {
     calib.save()
     layout()
     sceneRenderer.setAnimationEnabled(calib.settings.avatarMotion)
+    sceneRenderer.setWireframe(calib.settings.wireframe)
   },
   onCalibrateDistance: () => {
     // 既知距離40cmでの距離校正(spec.md §6.3)
@@ -87,6 +88,7 @@ window.addEventListener('orientationchange', () => {
 layout()
 
 sceneRenderer.setAnimationEnabled(calib.settings.avatarMotion)
+sceneRenderer.setWireframe(calib.settings.wireframe)
 void sceneRenderer.loadAvatar(`${import.meta.env.BASE_URL}models/RobotExpressive.glb`)
 
 // ---- カメラ起動(spec.md §4) ----
