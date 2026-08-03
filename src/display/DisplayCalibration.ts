@@ -40,7 +40,9 @@ export class DisplayCalibration {
     this.isMobile = isCoarsePointer()
     this.settings = {
       screenWidthMm: this.isMobile ? 70 : 530, // 典型的なスマホ短辺 / 24型モニター横幅
-      hfovDeg: 63,
+      // 640x480ストリームの実効画角は端末スペックの広角値より狭いことが多い。
+      // 広めに誤ると距離を過小推定し歪みが過大になるため控えめな既定値にする。
+      hfovDeg: 55,
       ipdMm: 63,
       camAboveMm: 5,
       mirrorX: true,
